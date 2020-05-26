@@ -1,0 +1,202 @@
+1. Подключить фрэймворк через нугет
+2. Создать БД
+3. Создать классы на основе БД 
+	3.1 Добавить ADO.NET EDM
+	3.2 EF из базы данных
+	3.3 подключить 
+4. Добавить using System.Data.Entity;
+5. Заполнениеаполнение датагрид
+		StipendiaEntities db;
+        public Stipendiya()
+        {
+            InitializeComponent();
+			
+            db = new StipendiaEntities();
+            db.Grant.Load();
+            StipendiyaGreed.ItemsSource = db.Grant.Local.ToBindingList();
+        }
+		
+6. Удаление 
+            Grant GrantRow = (Grant)StipendiyaGreed.SelectedItems[0];
+            Grant g = db.Grant.Find(GrantRow.ID_Grant);
+            db.Grant.Remove(g);
+            db.SaveChanges();
+			
+7. Добавление 
+			Grant g = new Grant();
+            g.Name_Grant = ComboGrand.Text;
+            g.Size_Grant = float.Parse(TextGrand.Text);
+
+            db.Grant.Add(g);
+            db.SaveChanges();
+			
+8. Редактирование
+			Grant GrantRow = (Grant)StipendiyaGreed.SelectedItems[0];
+            Grant g = db.Grant.Find(GrantRow.ID_Grant);
+
+            g.Name_Grant= ComboGrand.Text;
+            g.Size_Grant = float.Parse(TextGrand.Text);
+            db.SaveChanges();
+            StipendiyaGreed.Items.Refresh();
+			
+9. Поиск
+
+ private void Button_Click_3(object sender, RoutedEventArgs e)
+        {
+           
+            float mon = float.Parse(moneySrc.Text);
+            var Src = db.Grant.Where(p => p.Size_Grant == mon&& p.Name_Grant==GrantBox.Text).ToList();
+			var Src = db.Grant.Where(p=> p.Name_Grant.Contains(GrantBox.Text)).ToList(); //LIKE
+            StipendiyaGreed.ItemsSource = Src;
+
+        }
+
+10. Рисование на конвасе
+
+  if (Y1 == 0 && X1 == 0)
+            {
+                X1 = e.GetPosition(CAN).X;
+                Y1 = e.GetPosition(CAN).Y;
+            }
+            else
+            {
+                X2 = e.GetPosition(CAN).X;
+                Y2 = e.GetPosition(CAN).Y;
+                Line line = new Line();
+                line.X1 = X1;
+                line.X2 = X2;
+                line.Y1 = Y1;
+                line.Y2 = Y2;
+                line.Stroke = Brushes.Red;
+                line.StrokeThickness = 5;
+                CAN.Children.Add(line);
+            }
+            LAB.Content = "X1: " + X1 + " Y1: " + Y1 + " X2: " + X2 + " Y2: " + Y2;
+            if (Y2 != 0 && X2 != 0)
+            {
+                Y1 = 0; Y2 = 0; X1 = 0; X2 = 0;
+            }
+
+11. сохранение изображения с канваса
+
+        private void Save_BTN_Click(object sender, RoutedEventArgs e)
+        {
+            Microsoft.Win32.SaveFileDialog saveimg = new Microsoft.Win32.SaveFileDialog();
+            //Canvas can = new Canvas();  // канвас уже есть
+            saveimg.DefaultExt = ".PNG";
+            saveimg.Filter = "Image (.PNG)|*.PNG";
+            if (saveimg.ShowDialog() == true)
+            {
+                ToImageSource2(CAN, saveimg.FileName);  //DragArena  - имя имеющегося канваса
+            }
+        }
+
+        public static void ToImageSource(Canvas canvas, string filename)
+        {
+            RenderTargetBitmap bmp = new RenderTargetBitmap((int)canvas.ActualWidth, (int)canvas.ActualHeight, 96d, 96d, PixelFormats.Pbgra32);
+            canvas.Measure(new Size((int)canvas.ActualWidth, (int)canvas.ActualHeight));
+            canvas.Arrange(new Rect(new Size((int)canvas.ActualWidth, (int)canvas.ActualHeight)));
+            bmp.Render(canvas);
+            PngBitmapEncoder encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(bmp));
+            using (FileStream file = File.Create(filename))
+            {
+                encoder.Save(file);
+            }
+        }
+
+        public static void ToImageSource2(Canvas canvas, string filename)
+        {
+
+            canvas.LayoutTransform = null;  //обнуляем маштабировние если было
+
+
+            //качество изображения
+            double dpi = 300;
+            double scale = dpi / 96;
+
+            Size size = canvas.RenderSize;
+            RenderTargetBitmap image = new RenderTargetBitmap((int)(size.Width * scale), (int)(size.Height * scale), dpi, dpi, PixelFormats.Pbgra32);
+            canvas.Measure(size);
+            canvas.Arrange(new Rect(size)); // This is important      
+
+            image.Render(canvas);
+            PngBitmapEncoder encoder = new PngBitmapEncoder();  //конвертируем в png формат
+            encoder.Frames.Add(BitmapFrame.Create(image));
+            using (FileStream file = File.Create(filename))
+            {
+                encoder.Save(file);
+            }
+        }
+12. Timer
+
+using System.Windows.Threading;
+ 
+//  установка таймера
+timer = new DispatcherTimer();
+timer.Tick += new EventHandler(timer_Tick);
+timer.Interval = new TimeSpan(0,0,1);
+timer.Start();
+ 
+//...
+ 
+private void timer_Tick(object sender, EventArgs e)
+{
+    // код здесь
+}
+
+Использование классов
+
+using System.Data.Linq.Mapping;
+
+namespace AutoSchool
+{
+    [Table(Name = "Авторизация")]
+    public class Auth
+    {
+        [Column(IsPrimaryKey = true, IsDbGenerated = true, Name = "Код пользователя")]
+        public int kod { get; set; }
+
+        [Column(Name = "Логин")]
+        public string login { get; set; }
+
+        [Column(Name = "Статус")]
+        public bool status { get; set; }
+    }
+}
+
+Загрузка таблицы
+
+ using (DataContext db = new DataContext(connectionString))
+            {
+                Table<Auth> users = db.GetTable<Auth>();
+                var sUsers = users.Where(c => c.status == true);
+                userGrid.ItemsSource = sUsers;
+            }
+			
+Изменение 
+
+ using (DataContext db = new DataContext(connectionString))
+                {
+                    Auth user = db.GetTable<Auth>().Where(c => c.kod == ((Auth)userGrid.SelectedItem).kod).FirstOrDefault();
+                    user.login = log.Text;
+                    user.status = status.IsChecked.GetValueOrDefault(false);
+                    db.SubmitChanges();
+                }
+				
+Добавление
+
+ using (DataContext db = new DataContext(connectionString))
+            {
+                Auth user = new Auth()
+				{
+				login = log.Text,
+                status = status.IsChecked.GetValueOrDefault(false)
+				};
+                db.GetTable<Auth>().InsertOnSubmit(user);
+                db.SubmitChanges();
+				
+Удаление
+            Auth user = db.GetTable<Auth>().Where(c => c.kod == ((Auth)userGrid.SelectedItem).kod).FirstOrDefault();
+            db.GetTable<Auth>().DeleteOnSubmit(user);
+            db.SaveChanges();
